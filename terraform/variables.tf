@@ -4,23 +4,8 @@ variable "github_owner" {
   default     = "jyjulianwong"
 }
 
-variable "repositories" {
-  description = "Repository names (under github_owner) to protect the default branch of"
+variable "branch_ruleset_additional_repositories" {
+  description = "Repositories to protect even though they don't match branch_ruleset.tf's live discovery query (e.g. forks, which are excluded by fork:false) — merged with the discovered set. Scoped to the branch_ruleset module only; a future module's override list should be its own separate variable."
   type        = list(string)
-  default = [
-    "Anon-OpenRouter-Chat",
-    "Autotrader-Downloader-2026.3",
-    "homebrew-lasagnastack",
-    "Infrastructure-GitHub",
-    "Investment-AI-Suite",
-    "Investment-Fund-Reporting-AI",
-    "Investment-News-Analysis-AI",
-    "jyjulianwong",
-    "LasagnaStack",
-    "Market-Regime-Detector",
-    "Obsidian-Server",
-    "TradingAgents-Funds-Runner",
-    "Turtle-Quant-1",
-    "World-Take-Home-Income-Calculator",
-  ]
+  default     = ["TradingAgents-Funds"]
 }

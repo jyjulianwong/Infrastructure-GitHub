@@ -17,18 +17,35 @@ resources) differs.
     role; see the module's `main.tf` comment for how that undocumented ID was
     confirmed).
 
-The root stack (`terraform/main.tf`) applies this module to every repository listed in
-`var.repositories` (`terraform/variables.tf`).
+`terraform/branch_ruleset.tf` discovers repositories live on every `plan`/`apply`
+via a `data "github_repositories"` query (GitHub's search API,
+`query = "user:${var.github_owner} archived:false fork:false"`) and applies the
+module to every result — not a hardcoded list. A repo you create later is picked up
+automatically on the next apply; one you archive drops out automatically. No
+Terraform code change needed either way. (This does mean a plan can show a repo
+being added/removed purely because you created or archived something on GitHub —
+not because anyone edited this repo.)
+
+Repos that don't match that query but should still be protected go in
+`var.branch_ruleset_additional_repositories` (`terraform/variables.tf`) — e.g.
+`TradingAgents-Funds`, a fork, which the query's `fork:false` deliberately excludes.
+Edit that list to add more overrides later.
+
+This discovery query and override list are scoped to the `branch_ruleset` module
+only — each file name and variable is prefixed `branch_ruleset_*` deliberately. A
+future module (e.g. GitHub Pages config) that needs a different repo filter gets
+its own `<module>.tf` file with its own discovery query and its own
+`<module>_additional_repositories` variable, rather than sharing these.
 
 ## Repository layout
 
 ```
 terraform/
-├── bootstrap/        # one-time: AWS S3 state bucket + DynamoDB lock table + CI IAM user
-├── backend.tf         # S3 backend (bucket/dynamodb_table passed via -backend-config)
-├── main.tf            # github provider + branch_ruleset module, applied per repository
-├── variables.tf       # github_owner, repositories list
-├── outputs.tf
+├── bootstrap/          # one-time: AWS S3 state bucket + DynamoDB lock table + CI IAM user
+├── backend.tf           # S3 backend (bucket/dynamodb_table passed via -backend-config)
+├── main.tf              # shared: terraform block + github provider only
+├── branch_ruleset.tf    # branch_ruleset module's own repo discovery + module calls + outputs
+├── variables.tf         # github_owner + branch_ruleset_additional_repositories
 └── modules/
     └── branch_ruleset/
 ```
@@ -56,7 +73,7 @@ cd ../..
 ### 3. Create a GitHub personal access token
 
 With `repo` scope (classic), or a fine-grained token with "Administration"
-read/write on every repo listed in `var.repositories` — the default per-workflow
+read/write on every repo owned by `github_owner` — the default per-workflow
 `GITHUB_TOKEN` can't manage rulesets on repos other than the one the workflow runs
 in. [Create one here](https://github.com/settings/tokens/new), then copy it — you
 won't be able to view it again.

@@ -16,16 +16,3 @@ terraform {
 provider "github" {
   owner = var.github_owner
 }
-
-# ---------------------------------------------------------------------------
-# Branch protection — one ruleset per repository in var.repositories,
-# protecting each repo's default branch (brief: "main is protected, no one
-# can push directly except repository admins").
-# ---------------------------------------------------------------------------
-
-module "branch_ruleset" {
-  source   = "./modules/branch_ruleset"
-  for_each = toset(var.repositories)
-
-  repository = each.value
-}
