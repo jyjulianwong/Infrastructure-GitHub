@@ -1,0 +1,13 @@
+schema_version: "1.1"
+name: onboards-mkdocs-site-already-on-pages
+expected_outcome: |
+  The skill correctly identifies this as the "mkdocs" variant (mkdocs.yml
+  present) and, without needing any live GitHub calls:
+  - Adds demo-mkdocs-site/docs/CNAME containing demo-mkdocs-site.jyjwong.com
+  - Updates mkdocs.yml's site_url to https://demo-mkdocs-site.jyjwong.com/
+  - Does NOT invent a base-path fix for mkdocs (there isn't one) — the
+    reference doc explicitly warns against this
+  - Adds a new, alphabetically-placed "Demo-Mkdocs-Site" entry to
+    fake-infra/terraform/variables.tf's pages_domain_repositories map, and
+    the terraform validation step passes
+  - Produces a report.md describing both PRs it would open

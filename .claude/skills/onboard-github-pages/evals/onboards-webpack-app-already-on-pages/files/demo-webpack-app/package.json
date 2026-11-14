@@ -1,0 +1,5 @@
+{
+  "name": "demo-webpack-app",
+  "version": "1.0.0",
+  "scripts": { "build": "webpack --config config/webpack.prod.js" }
+}

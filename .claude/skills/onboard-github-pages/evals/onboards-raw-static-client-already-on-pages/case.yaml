@@ -1,0 +1,16 @@
+schema_version: "1.1"
+name: onboards-raw-static-client-already-on-pages
+expected_outcome: |
+  The skill correctly identifies this as the "raw-static" variant
+  (client/index.html, no build tooling) and, without needing any live
+  GitHub calls:
+  - Adds demo-raw-static/client/CNAME containing demo-raw-static.jyjwong.com
+  - Updates the hardcoded link to Demo-Mkdocs-Site in client/index.html
+    from https://jyjulianwong.github.io/Demo-Mkdocs-Site/ to
+    https://demo-mkdocs-site.jyjwong.com/ (the cross-repo self-link case)
+  - Correctly judges that no other base-path fix is needed, since the
+    existing asset references are already relative
+  - Adds a new, alphabetically-placed "Demo-Raw-Static" entry to
+    fake-infra/terraform/variables.tf's pages_domain_repositories map, and
+    the terraform validation step passes
+  - Produces a report.md describing both PRs it would open

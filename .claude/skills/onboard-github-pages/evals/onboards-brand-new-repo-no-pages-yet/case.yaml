@@ -1,0 +1,15 @@
+schema_version: "1.1"
+name: onboards-brand-new-repo-no-pages-yet
+expected_outcome: |
+  The skill follows references/new-pages-site.md because Pages isn't
+  enabled yet: it detects the "vite" variant (vite.config.js already has
+  base: '/', correctly recognizing there's no base-path fix needed here),
+  notices there's no deploy workflow, and scaffolds one from
+  assets/workflows/vite.yml into .github/workflows/deploy.yml. It adds
+  public/CNAME. It states the gh api -X POST .../pages -f
+  build_type=workflow call it would make to enable Pages (workflow build
+  type has no branch dependency, so this doesn't need to wait for a first
+  deploy). It adds a new, alphabetically-placed "Demo-Brand-New-App" entry
+  to fake-infra/terraform/variables.tf's pages_domain_repositories map, and
+  the terraform validation step passes. It does not fabricate a GitHub
+  repo check or pretend to have enabled Pages for real.

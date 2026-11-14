@@ -1,0 +1,16 @@
+schema_version: "1.1"
+name: onboards-webpack-app-already-on-pages
+expected_outcome: |
+  The skill correctly identifies this as the "webpack-copy" variant
+  (CopyPlugin in config/webpack.common.js, no public/ dir) and, without
+  needing any live GitHub calls:
+  - Adds demo-webpack-app/src/CNAME containing demo-webpack-app.jyjwong.com
+  - Adds a matching entry to CopyPlugin's patterns array in
+    config/webpack.common.js so the CNAME file actually reaches dist/
+  - Removes the ROUTER_BASENAME: /Demo-Webpack-App env line from
+    .github/workflows/ci.yml, without touching webpack.common.js's or
+    App.jsx's basename-handling code (which is already correct)
+  - Adds a new, alphabetically-placed "Demo-Webpack-App" entry to
+    fake-infra/terraform/variables.tf's pages_domain_repositories map, and
+    the terraform validation step passes
+  - Produces a report.md describing both PRs it would open
