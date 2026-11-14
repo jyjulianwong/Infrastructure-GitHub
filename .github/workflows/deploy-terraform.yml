@@ -58,7 +58,7 @@ jobs:
         id: terraform-plan
         working-directory: terraform
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_ADMIN_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_ADMIN_TOKEN }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           terraform plan \
@@ -117,7 +117,7 @@ jobs:
       - name: Terraform Apply
         working-directory: terraform
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_ADMIN_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_ADMIN_TOKEN }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           terraform apply \

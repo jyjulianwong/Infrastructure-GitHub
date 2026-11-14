@@ -105,18 +105,18 @@ In this repo → **Settings → Secrets and variables → Actions → New reposi
 | `AWS_ACCOUNT_ID` | `$AWS_ACCOUNT_ID` from step 1 (`echo $AWS_ACCOUNT_ID`) |
 | `AWS_ACCESS_KEY_ID` | From step 2 |
 | `AWS_SECRET_ACCESS_KEY` | From step 2 |
-| `GH_ADMIN_TOKEN` | From step 3 |
+| `GITHUB_ADMIN_TOKEN` | From step 3 |
 | `CLOUDFLARE_API_TOKEN` | From step 4 |
 
 Or, with the [`gh` CLI](https://cli.github.com/) (no manual copy-paste — run from
-`terraform/bootstrap`, with `GH_ADMIN_TOKEN` from step 3 and `CLOUDFLARE_API_TOKEN`
+`terraform/bootstrap`, with `GITHUB_ADMIN_TOKEN` from step 3 and `CLOUDFLARE_API_TOKEN`
 from step 4 exported first):
 
 ```bash
 gh secret set AWS_ACCOUNT_ID --body "$AWS_ACCOUNT_ID"
 gh secret set AWS_ACCESS_KEY_ID --body "$(terraform output -raw github_actions_access_key_id)"
 gh secret set AWS_SECRET_ACCESS_KEY --body "$(terraform output -raw github_actions_secret_access_key)"
-gh secret set GH_ADMIN_TOKEN --body "$GH_ADMIN_TOKEN"
+gh secret set GITHUB_ADMIN_TOKEN --body "$GITHUB_ADMIN_TOKEN"
 gh secret set CLOUDFLARE_API_TOKEN --body "$CLOUDFLARE_API_TOKEN"
 ```
 
