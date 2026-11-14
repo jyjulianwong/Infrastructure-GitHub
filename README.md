@@ -37,15 +37,26 @@ future module (e.g. GitHub Pages config) that needs a different repo filter gets
 its own `<module>.tf` file with its own discovery query and its own
 `<module>_additional_repositories` variable, rather than sharing these.
 
+- **`pages_domains.tf`** — one Cloudflare `CNAME` DNS record per repository in
+  `var.pages_domain_repositories` (`terraform/variables.tf`), in the
+  `var.pages_domain_zone` zone (`jyjwong.com`), pointing at
+  `jyjulianwong.github.io`. This is a hand-maintained map, not a live discovery
+  query like `branch_ruleset`'s — not every repository has, or should have,
+  Pages enabled. It only manages the DNS side: the matching GitHub Pages
+  `cname` setting is configured implicitly when each listed repository commits
+  a `CNAME` file to its own Pages publishing source (done via that repo's own
+  PR, not here) — see the comment at the top of `pages_domains.tf` for why.
+
 ## Repository layout
 
 ```
 terraform/
 ├── bootstrap/          # one-time: AWS S3 state bucket + DynamoDB lock table + CI IAM user
 ├── backend.tf           # S3 backend (bucket/dynamodb_table passed via -backend-config)
-├── main.tf              # shared: terraform block + github provider only
+├── main.tf              # shared: terraform block + github + cloudflare providers only
 ├── branch_ruleset.tf    # branch_ruleset module's own repo discovery + module calls + outputs
-├── variables.tf         # github_owner + branch_ruleset_additional_repositories
+├── pages_domains.tf     # pages_domains module's own Cloudflare DNS records
+├── variables.tf         # github_owner, branch_ruleset_additional_repositories, pages_domain_*
 └── modules/
     └── branch_ruleset/
 ```
@@ -78,7 +89,14 @@ read/write on every repo owned by `github_owner` — the default per-workflow
 in. [Create one here](https://github.com/settings/tokens/new), then copy it — you
 won't be able to view it again.
 
-### 4. Add GitHub Actions secrets
+### 4. Create a Cloudflare API token
+
+Scoped to `Zone → DNS → Edit`, restricted to the `jyjwong.com` zone — nothing
+broader is needed for `pages_domains.tf`.
+[Create one here](https://dash.cloudflare.com/profile/api-tokens), using the
+"Edit zone DNS" template, then copy it.
+
+### 5. Add GitHub Actions secrets
 
 In this repo → **Settings → Secrets and variables → Actions → New repository secret**:
 
@@ -88,21 +106,25 @@ In this repo → **Settings → Secrets and variables → Actions → New reposi
 | `AWS_ACCESS_KEY_ID` | From step 2 |
 | `AWS_SECRET_ACCESS_KEY` | From step 2 |
 | `GH_ADMIN_TOKEN` | From step 3 |
+| `CLOUDFLARE_API_TOKEN` | From step 4 |
 
 Or, with the [`gh` CLI](https://cli.github.com/) (no manual copy-paste — run from
-`terraform/bootstrap`, with `GH_ADMIN_TOKEN` from step 3 exported first):
+`terraform/bootstrap`, with `GH_ADMIN_TOKEN` from step 3 and `CLOUDFLARE_API_TOKEN`
+from step 4 exported first):
 
 ```bash
 gh secret set AWS_ACCOUNT_ID --body "$AWS_ACCOUNT_ID"
 gh secret set AWS_ACCESS_KEY_ID --body "$(terraform output -raw github_actions_access_key_id)"
 gh secret set AWS_SECRET_ACCESS_KEY --body "$(terraform output -raw github_actions_secret_access_key)"
 gh secret set GH_ADMIN_TOKEN --body "$GH_ADMIN_TOKEN"
+gh secret set CLOUDFLARE_API_TOKEN --body "$CLOUDFLARE_API_TOKEN"
 ```
 
 ## Applying locally
 
 ```bash
 export GITHUB_TOKEN=$(gh auth token)   # or a PAT with `repo` scope
+export CLOUDFLARE_API_TOKEN=...        # Zone:DNS:Edit on jyjwong.com
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
 terraform -chdir=terraform init \
