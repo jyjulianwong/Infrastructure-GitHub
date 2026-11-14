@@ -1,0 +1,15 @@
+schema_version: "1.1"
+name: onboards-vite-app-already-on-pages
+expected_outcome: |
+  The skill correctly identifies this as the "vite" variant (vite.config.js
+  present) and, without needing any live GitHub calls:
+  - Adds demo-vite-app/public/CNAME containing demo-vite-app.jyjwong.com
+  - Changes vite.config.js's base from '/Demo-Vite-App/' to '/'
+  - Updates the self-referential link in README.md from the old
+    jyjulianwong.github.io URL to https://demo-vite-app.jyjwong.com/
+  - Adds a new, alphabetically-placed "Demo-Vite-App" = "demo-vite-app"
+    entry to fake-infra/terraform/variables.tf's pages_domain_repositories
+    map, and the terraform validation step (validate_terraform.sh) passes
+  - Produces a report.md describing both PRs it would open, with no
+    manual follow-ups needed (this fixture has no CORS/secret dependency
+    to flag)
