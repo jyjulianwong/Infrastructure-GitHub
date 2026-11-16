@@ -18,8 +18,21 @@ env:
   TF_BACKEND_TABLE: jyjulianwong-iacgh-terraform-lock
 
 jobs:
+  scan-vulnerabilities:
+    name: Scan Vulnerabilities
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   terraform-plan:
     name: Terraform Plan
+    needs: scan-vulnerabilities
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     permissions:
@@ -86,6 +99,7 @@ jobs:
 
   deploy:
     name: Terraform Apply
+    needs: scan-vulnerabilities
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
