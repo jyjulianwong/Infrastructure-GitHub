@@ -92,14 +92,13 @@ resource "aws_dynamodb_table" "tf_lock" {
 }
 
 # ---------------------------------------------------------------------------
-# GitHub Actions OIDC provider — ACCOUNT-WIDE SINGLETON.
-#
+# GitHub Actions OIDC provider (account-wide singleton)
+# ---------------------------------------------------------------------------
 # An AWS account can hold only one OIDC provider per issuer URL, so this repo
 # owns it for every jyjulianwong-* repo deploying into the account. The other
 # repos' bootstraps look it up with a data source and refuse to run until this
 # bootstrap has been applied. Never destroy this stack while they still
 # deploy into the account.
-# ---------------------------------------------------------------------------
 
 resource "aws_iam_openid_connect_provider" "github" {
   url            = "https://token.actions.githubusercontent.com"
@@ -107,7 +106,9 @@ resource "aws_iam_openid_connect_provider" "github" {
 }
 
 # ---------------------------------------------------------------------------
-# IAM — GitHub Actions role (OIDC), scoped to Terraform state access only.
+# IAM — GitHub Actions role (OIDC)
+# ---------------------------------------------------------------------------
+# Scoped to Terraform state access only.
 #
 # Unlike the other jyjulianwong-* repos' github-actions roles, this one needs
 # no broader "TerraformApplyRegional"/"TerraformApplyIAM" grant — the main
@@ -119,7 +120,6 @@ resource "aws_iam_openid_connect_provider" "github" {
 #
 # Lives here, not in the main stack, so CI can never rewrite its own trust
 # policy or permissions — only a local bootstrap apply can.
-# ---------------------------------------------------------------------------
 
 data "aws_iam_policy_document" "github_actions_trust" {
   statement {
@@ -188,11 +188,11 @@ resource "aws_iam_role_policy" "github_actions" {
   policy = data.aws_iam_policy_document.github_actions.json
 }
 
-output "state_bucket_name" {
+output "iac_tf_state_bucket_name" {
   value = aws_s3_bucket.tf_state.bucket
 }
 
-output "lock_table_name" {
+output "iac_tf_lock_table_name" {
   value = aws_dynamodb_table.tf_lock.name
 }
 
