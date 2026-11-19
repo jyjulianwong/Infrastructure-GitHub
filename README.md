@@ -51,7 +51,7 @@ its own `<module>.tf` file with its own discovery query and its own
 
 ```
 terraform/
-├── bootstrap/          # one-time: AWS S3 state bucket + DynamoDB lock table + CI IAM user
+├── bootstrap/          # AWS S3 state bucket + DynamoDB lock table + GitHub Actions OIDC provider and CI role
 ├── backend.tf           # S3 backend (bucket/dynamodb_table passed via -backend-config)
 ├── main.tf              # shared: terraform block + github + cloudflare providers only
 ├── branch_ruleset.tf    # branch_ruleset module's own repo discovery + module calls + outputs
@@ -63,25 +63,7 @@ terraform/
 
 ## One-time setup
 
-### 1. Bootstrap the state backend
-
-```bash
-AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-
-terraform -chdir=terraform/bootstrap init
-terraform -chdir=terraform/bootstrap apply -var="aws_account_id=$AWS_ACCOUNT_ID"
-```
-
-### 2. Retrieve the generated IAM credentials
-
-```bash
-cd terraform/bootstrap
-terraform output github_actions_access_key_id
-terraform output -raw github_actions_secret_access_key && echo
-cd ../..
-```
-
-### 3. Create a GitHub personal access token
+### 1. Create a GitHub personal access token
 
 With `repo` scope (classic), or a fine-grained token with "Administration"
 read/write on every repo owned by `github_owner` — the default per-workflow
@@ -89,36 +71,37 @@ read/write on every repo owned by `github_owner` — the default per-workflow
 in. [Create one here](https://github.com/settings/tokens/new), then copy it — you
 won't be able to view it again.
 
-### 4. Create a Cloudflare API token
+### 2. Create a Cloudflare API token
 
 Scoped to `Zone → DNS → Edit`, restricted to the `jyjwong.com` zone — nothing
 broader is needed for `pages_domains.tf`.
 [Create one here](https://dash.cloudflare.com/profile/api-tokens), using the
 "Edit zone DNS" template, then copy it.
 
-### 5. Add GitHub Actions secrets
+### 3. Run the bootstrap script
 
-In this repo → **Settings → Secrets and variables → Actions → New repository secret**:
-
-| Secret name | Value |
-|---|---|
-| `AWS_ACCOUNT_ID` | `$AWS_ACCOUNT_ID` from step 1 (`echo $AWS_ACCOUNT_ID`) |
-| `AWS_ACCESS_KEY_ID` | From step 2 |
-| `AWS_SECRET_ACCESS_KEY` | From step 2 |
-| `GH_ADMIN_TOKEN` | From step 3 |
-| `CLOUDFLARE_API_TOKEN` | From step 4 |
-
-Or, with the [`gh` CLI](https://cli.github.com/) (no manual copy-paste — run from
-`terraform/bootstrap`, with `GH_ADMIN_TOKEN` from step 3 and `CLOUDFLARE_API_TOKEN`
-from step 4 exported first):
+With admin credentials for the target AWS account (e.g. after `aws sso login`)
+and an authenticated [`gh` CLI](https://cli.github.com/):
 
 ```bash
-gh secret set AWS_ACCOUNT_ID --body "$AWS_ACCOUNT_ID"
-gh secret set AWS_ACCESS_KEY_ID --body "$(terraform output -raw github_actions_access_key_id)"
-gh secret set AWS_SECRET_ACCESS_KEY --body "$(terraform output -raw github_actions_secret_access_key)"
-gh secret set GH_ADMIN_TOKEN --body "$GH_ADMIN_TOKEN"
-gh secret set CLOUDFLARE_API_TOKEN --body "$CLOUDFLARE_API_TOKEN"
+scripts/bootstrap.sh
 ```
+
+It shows the plan and asks before applying anything, and is safe to re-run. It:
+
+1. applies `terraform/bootstrap` — the S3 state bucket, DynamoDB lock table, the
+   account-wide GitHub Actions OIDC provider, and the CI role this repo's
+   workflow assumes (no static AWS keys anywhere);
+2. moves the bootstrap's own state into the state bucket
+   (`bootstrap/terraform.tfstate`), so later runs work from any clean clone;
+3. sets the `AWS_ACCOUNT_ID` and `AWS_ROLE_ARN` GitHub Actions secrets, prompts
+   for `GH_ADMIN_TOKEN` (step 1) and `CLOUDFLARE_API_TOKEN` (step 2) if the repo
+   doesn't have them yet, and deletes any leftover `AWS_ACCESS_KEY_ID` /
+   `AWS_SECRET_ACCESS_KEY` secrets.
+
+**Run this repo's bootstrap before any other `jyjulianwong-*` repo's** — the OIDC
+provider it creates is a singleton per AWS account, and their bootstraps refuse to
+run until it exists.
 
 ## Applying locally
 
@@ -138,3 +121,6 @@ terraform -chdir=terraform apply
 
 `.github/workflows/deploy-terraform.yml`: `terraform plan` is posted as a PR comment
 on pull requests touching `terraform/**`; `terraform apply` runs on merge to `main`.
+Both authenticate to AWS through GitHub's OIDC provider by assuming
+`AWS_ROLE_ARN`, whose trust policy only accepts this repo's `main` branch and its
+pull requests.
