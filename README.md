@@ -47,6 +47,19 @@ its own `<module>.tf` file with its own discovery query and its own
   a `CNAME` file to its own Pages publishing source (done via that repo's own
   PR, not here) — see the comment at the top of `pages_domains.tf` for why.
 
+- **`scripts/cleanup-merged-branches.sh`** (run on a schedule by
+  `.github/workflows/cleanup-merged-branches.yml`, not Terraform) — sweeps every
+  non-archived repo owned by `github_owner` and deletes branches whose PR has
+  already merged, skipping each repo's default branch and a hardcoded list of
+  well-known branch names (`main`, `master`, `develop`, etc. — see the script).
+  It's a script rather than a Terraform resource deliberately: Terraform's
+  `github_repository` resource manages a repo's *entire* settings surface, so
+  declaring one per discovered repo just to express "delete merged branches"
+  risks Terraform resetting unrelated existing settings to the provider's
+  schema defaults. The same script also flips on each repo's native
+  "automatically delete head branches" setting via the API, so future merges
+  don't add to the backlog this sweep clears.
+
 ## Repository layout
 
 ```
@@ -124,3 +137,9 @@ on pull requests touching `terraform/**`; `terraform apply` runs on merge to `ma
 Both authenticate to AWS through GitHub's OIDC provider by assuming
 `AWS_ROLE_ARN`, whose trust policy only accepts this repo's `main` branch and its
 pull requests.
+
+`.github/workflows/cleanup-merged-branches.yml`: runs
+`scripts/cleanup-merged-branches.sh` weekly (and on `workflow_dispatch`) using the
+`GH_ADMIN_TOKEN` secret. A pull request touching the workflow or the script itself
+instead runs the script with `--dry-run` and posts what it would have deleted as a
+PR comment, so a change to the cleanup logic can be reviewed before it runs live.
