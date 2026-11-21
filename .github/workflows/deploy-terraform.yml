@@ -18,8 +18,8 @@ env:
   TF_BACKEND_TABLE: jyjulianwong-iacgh-terraform-lock
 
 jobs:
-  scan-vulnerabilities:
-    name: Scan Vulnerabilities
+  security-scan:
+    name: Security scan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,7 +32,7 @@ jobs:
 
   terraform-plan:
     name: Terraform Plan
-    needs: scan-vulnerabilities
+    needs: security-scan
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     permissions:
@@ -99,7 +99,7 @@ jobs:
 
   deploy:
     name: Terraform Apply
-    needs: scan-vulnerabilities
+    needs: security-scan
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
