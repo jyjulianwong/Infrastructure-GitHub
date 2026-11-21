@@ -12,7 +12,7 @@ on:
 
 jobs:
   dry-run:
-    name: Dry Run
+    name: Dry run
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     permissions:
